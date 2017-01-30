@@ -62,9 +62,9 @@ function deleteResourceThen(id, callback) {
 function updateResourceThen(id, resource, etag, callback) {
   var query
   if (etag)
-     query = `UPDATE ${COMPONENT_RESOURCE_TABLE} SET (etag, data) = (${(etag+1) % 2147483647}, '${JSON.stringify(resource)}') WHERE id = '${key}' AND etag = ${etag} RETURNING etag`
+     query = `UPDATE ${COMPONENT_RESOURCE_TABLE} SET (etag, data) = (${(etag+1) % 2147483647}, '${JSON.stringify(resource)}') WHERE id = '${id}' AND etag = ${etag} RETURNING etag`
   else
-     query = `UPDATE ${COMPONENT_RESOURCE_TABLE} SET (data) = (${(etag+1) % 2147483647}, '${JSON.stringify(resource)}') WHERE id = '${key}' RETURNING etag`  
+     query = `UPDATE ${COMPONENT_RESOURCE_TABLE} SET (data) = (${(etag+1) % 2147483647}, '${JSON.stringify(resource)}') WHERE id = '${id}' RETURNING etag`  
   pool.query(query, function (err, pgResult) {
     if (err)
       callback(err)

@@ -138,14 +138,16 @@ function deleteResource(req, res, id) {
 
 function updateResource(req, res, id, patch) {
   ifAllowedThen(req, res, null, '_self', 'update', null, null, function() {
-    db.withResourceDo(id, function(resource , etag) {
-      if (req.headers['if-match'] == etag) { 
+    db.withResourceDo(id, function(err, resource , etag) {
+      if (err)
+        handleErr(req, res, err, etag)
+      else if (req.headers['if-match'] == etag) { 
         lib.applyPatch(req, res, resource, patch, function(patchedResource) {
           verifyResource(patchedResource, function(err) {
             if (err)
               lib.badRequest(res, err)
             else
-              db.updateResourceThen(id, makeSelfURL(req, id), patchedResource, etag, function (err, etag) {
+              db.updateResourceThen(id, patchedResource, etag, function (err, etag) {
                 log('updateResource', `updated resource. err: ${err} id: ${id} etag: ${etag}`)
                 if (err)
                   handleErr(req, res, err, etag)

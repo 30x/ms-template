@@ -63,8 +63,8 @@ def main():
 
     headers = {'Content-Type': 'application/merge-patch+json', 'Accept': 'application/json','Authorization': 'BEARER %s' % TOKEN1, 'If-Match': example_etag}
     r = requests.patch(example_url, headers=headers, json=patch)
-    if r.status_code == 400:
-        print 'correctly refused to patch permissions without If-Match header' 
+    if r.status_code == 200:
+        print 'correctly patched permissions' 
     else:
         print 'failed to patch permissions %s %s' % (r.status_code, r.text)
     
