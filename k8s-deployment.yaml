@@ -1,0 +1,50 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: <component-name>
+  labels:
+    name: <component-name>
+  namespace: apigee
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      component: <component-name>
+  template:
+    metadata:
+      labels:
+        component: <component-name>
+        routable: "true"
+      annotations:
+        privateHosts: sso.k8s.dev
+        privatePaths: 3000:/<component-name>
+    spec:
+      containers:
+      - name: <component-name>
+        image: <component-name>
+        imagePullPolicy: IfNotPresent
+        env:
+          - name: PORT
+            value: "3000"
+          - name: PG_HOST
+            valueFrom:
+              secretKeyRef:
+                name: permissions
+                key: pghost
+          - name: PG_USER
+            valueFrom:
+              secretKeyRef:
+                name: permissions
+                key: pguser
+          - name: PG_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: permissions
+                key: pgpassword
+          - name: PG_DATABASE
+            valueFrom:
+              secretKeyRef:
+                name: permissions
+                key: pgdatabase
+        ports:
+          - containerPort: 3000

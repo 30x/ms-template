@@ -1,0 +1,1 @@
+docker push <namespace>/<repo>:<version>
