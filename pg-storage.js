@@ -1,5 +1,6 @@
 'use strict'
 var Pool = require('pg').Pool
+const lib = require('response-helper-functions')
 
 var config = {
   host: process.env.PG_HOST,
@@ -8,13 +9,13 @@ var config = {
   database: process.env.PG_DATABASE
 }
 
-var COMPONENT_NAME = process.env.COMPONENT_NAME
-var COMPONENT_RESOURCE_TABLE = process.env.COMPONENT_RESOURCE_TABLE || COMPONENT_NAME
+var COMPONENT = process.env.COMPONENT
+var COMPONENT_RESOURCE_TABLE = process.env.COMPONENT_RESOURCE_TABLE || COMPONENT
 
 var pool = new Pool(config)
 
 function createResourceThen(res, id, resource, callback) {
-  var query = `INSERT INTO ${COMPONENT_RESOURCE_TABLE} (id, etag, data) values('${id}', 1, '${JSON.stringify(resource)}') RETURNING etag`
+  var query = `INSERT INTO ${COMPONENT_RESOURCE_TABLE} (id, etag, data) values('${id}', '${lib.uuid4()}', '${JSON.stringify(resource)}') RETURNING etag`
   pool.query(query, function (err, pgResult) {
     if (err)
       lib.internalError(res, err)
@@ -62,13 +63,15 @@ function deleteResourceThen(res, id, callback) {
 function updateResourceThen(res, id, resource, etag, callback) {
   var query
   if (etag)
-     query = `UPDATE ${COMPONENT_RESOURCE_TABLE} SET (etag, data) = (${(etag+1) % 2147483647}, '${JSON.stringify(resource)}') WHERE id = '${id}' AND etag = ${etag} RETURNING etag`
+     query = `UPDATE ${COMPONENT_RESOURCE_TABLE} SET (etag, data) = ('${lib.uuid4()}', '${JSON.stringify(resource)}') WHERE id = '${id}' AND etag = '${etag}' RETURNING etag`
   else
-     query = `UPDATE ${COMPONENT_RESOURCE_TABLE} SET (data) = (${(etag+1) % 2147483647}, '${JSON.stringify(resource)}') WHERE id = '${id}' RETURNING etag`  
+     query = `UPDATE ${COMPONENT_RESOURCE_TABLE} SET (data) = ('${JSON.stringify(resource)}') WHERE id = '${id}' RETURNING etag`  
   pool.query(query, function (err, pgResult) {
-    if (err)
+    if (err) {
+      console.log(query)
+      console.log(err)
       lib.internalError(res, err)
-    else {
+    } else {
       if (pgResult.rowCount === 0) 
         lib.notFound(res, `resource with id ${id} does not exist`)
       else {
@@ -80,7 +83,7 @@ function updateResourceThen(res, id, resource, etag, callback) {
 }
 
 function init(callback) {
-  var query = `CREATE TABLE IF NOT EXISTS ${COMPONENT_RESOURCE_TABLE} (id text primary key, etag int, data jsonb)`
+  var query = `CREATE TABLE IF NOT EXISTS ${COMPONENT_RESOURCE_TABLE} (id text primary key, etag text, data jsonb)`
   pool.connect(function(err, client, release) {
     if(err)
       console.error(`error creating ${COMPONENT_RESOURCE_TABLE} table`, err)

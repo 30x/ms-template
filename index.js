@@ -56,11 +56,12 @@ function createResource(req, res, resource) {
         delete resource._permissions; // unusual case where ; is necessary
         (new pLib.Permissions(permissions)).resolveRelativeURLs(selfURL)
       }
-      createPermissionsThen(req, res, selfURL, permissions, function(err, permissionsURL, permissions, responseHeaders){
+      createPermissionsThen(req, res, selfURL, permissions, function(permissionsURL, permissions, responseHeaders){
         // Create permissions first. If we fail after creating the permissions resource but before creating the main resource, 
         // there will be a useless but harmless permissions document.
         // If we do things the other way around, a resource without matching permissions could cause problems.
         db.createResourceThen(res, id, resource, function(etag) {
+          log('createResource', `created resource. id: ${id} etag: ${etag}`)
           resource.self = selfURL 
           addCalculatedProperties(resource)
           lib.created(req, res, resource, resource.self, etag)
@@ -81,7 +82,7 @@ function addCalculatedProperties(resource) {
 }
 
 function getResource(req, res, id) {
-  ifAllowedThen(req, res, null, '_self', 'read', null, null, function(err, reason) {
+  ifAllowedThen(req, res, null, '_self', 'read', null, null, function(reason) {
     db.withResourceDo(res, id, function(resource , etag) {
       resource.self = makeSelfURL(req, id)
       addCalculatedProperties(resource)
@@ -93,8 +94,9 @@ function getResource(req, res, id) {
 
 function deleteResource(req, res, id) {
   var resourceURL = '//' + req.headers.host + req.url
-  ifAllowedThen(req, res, url, '_self', 'delete', null, null, function(err, reason) {
+  ifAllowedThen(req, res, url, '_self', 'delete', null, null, function(reason) {
     db.deleteResourceThen(res, id, function (resource, etag) {
+      log('deleteResource', `deleted resource. id: ${id} etag: ${etag}`)
       deletePermissionsThen(req, res, resourceURL) // Don't wait for this. If it fails, there will be a dangling resource object
       addCalculatedProperties(resource)
       lib.found(req, res, resource, etag)
@@ -109,7 +111,7 @@ function updateResource(req, res, id, patch) {
         lib.applyPatch(req, res, resource, patch, function(patchedResource) {
           verifyResource(res, patchedResource, function() {
             db.updateResourceThen(res, id, patchedResource, etag, function (etag) {
-              log('updateResource', `updated resource. err: ${err} id: ${id} etag: ${etag}`)
+              log('updateResource', `updated resource. id: ${id} etag: ${etag}`)
               patchedResource.self = makeSelfURL(req, id) 
               addCalculatedProperties(patchedResource)
               lib.found(req, res, patchedResource, etag)
