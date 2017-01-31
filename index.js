@@ -2,6 +2,7 @@
 const http = require('http')
 const url = require('url')
 const lib = require('http-helper-functions')
+const rlib = require('response-helper-functions')
 const db = require('./pg-storage.js')
 const pLib = require('permissions-helper-functions')
 
@@ -11,23 +12,6 @@ const RESOURCES_PROPERTY = process.env.RESOURCES_PROPERTY || COMPONENT
 const CHECK_PERMISSIONS = process.env.CHECK_PERMISSIONS
 const RESOURCES_PATH = `${BASE_RESOURCE}${RESOURCES_PROPERTY}`
 const RESOURCES_PREFIX = `${BASE_RESOURCE}${RESOURCES_PROPERTY}/`
-
-console.log(RESOURCES_PATH, RESOURCES_PREFIX, CHECK_PERMISSIONS)
-
-function handleErr(req, res, err, param, callback) {
-  if (err == 404) 
-    lib.notFound(req, res)
-  else if (err == 400)
-    lib.badRequest(res, param)
-  else if (err == 409)
-    lib.respond(req, res, 409, {}, {statusCode:409, msg: param})
-  else if (err == 500)
-    lib.internalError(res, param)
-  else if (err)
-    lib.internalError(res, err)
-  else 
-    callback()
-}
 
 function log(funcionName, text) {
   console.log(Date.now(), COMPONENT, funcionName, text)
@@ -49,15 +33,12 @@ function createPermissionsThen (req, res, url, permissions, callback) {
 
 function deletePermissionsThen(req, res, resourceURL) {
   if (CHECK_PERMISSIONS)
-    lib.sendInternalRequest(req.headers, `/permissions?${resourceURL}`, 'DELETE', undefined, function (err, clientRes) {
-      if (err)
-        handleErr(req, res, err, clientRes)
-      else
-        lib.getClientResponseBody(clientRes, function(body) {
-          var statusCode = clientRes.statusCode
-          if (statusCode !== 200)
-            log('deleteResource', `unable to delete permissions for ${resourceURL}`)
-        })
+    lib.sendInternalRequestThen(req.headers, res, `/permissions?${resourceURL}`, 'DELETE', undefined, function (clientRes) {
+      lib.getClientResponseBody(clientRes, function(body) {
+        var statusCode = clientRes.statusCode
+        if (statusCode !== 200)
+          log('deleteResource', `unable to delete permissions for ${resourceURL}`)
+      })
     })  
 }
 
