@@ -61,38 +61,30 @@ function deletePermissionsThen(req, res, resourceURL) {
     })  
 }
 
-function verifyResource(resource, callback) {
-  callback(null)
+function verifyResource(res, resource, callback) {
+  callback()
 }
 
 function createResource(req, res, resource) {
   ifAllowedThen(req, res, `${RESOURCES_PREFIX}${RESOURCES_PROPERTY}`, '_self', 'create', null, null, function() {
-    verifyResource(resource, function(err) { 
-      if (err !== null) 
-        lib.badRequest(res, err)
-      else {
-        var id = lib.uuid4()
-        var selfURL = makeSelfURL(req, id)
-        var permissions = resource._permissions
-        if (permissions !== undefined) {
-          delete resource._permissions; // unusual case where ; is necessary
-          (new pLib.Permissions(permissions)).resolveRelativeURLs(selfURL)
-        }
-        createPermissionsThen(req, res, selfURL, permissions, function(err, permissionsURL, permissions, responseHeaders){
-          // Create permissions first. If we fail after creating the permissions resource but before creating the main resource, 
-          // there will be a useless but harmless permissions document.
-          // If we do things the other way around, a resource without matching permissions could cause problems.
-          db.createResourceThen(id, resource, function(err, etag) {
-            if (err)
-              handleError(req, res, err, etag)
-            else {
-              resource.self = selfURL 
-              addCalculatedProperties(resource)
-              lib.created(req, res, resource, resource.self, etag)
-            }
-          })
-        })
+    verifyResource(res, resource, function() { 
+      var id = lib.uuid4()
+      var selfURL = makeSelfURL(req, id)
+      var permissions = resource._permissions
+      if (permissions !== undefined) {
+        delete resource._permissions; // unusual case where ; is necessary
+        (new pLib.Permissions(permissions)).resolveRelativeURLs(selfURL)
       }
+      createPermissionsThen(req, res, selfURL, permissions, function(err, permissionsURL, permissions, responseHeaders){
+        // Create permissions first. If we fail after creating the permissions resource but before creating the main resource, 
+        // there will be a useless but harmless permissions document.
+        // If we do things the other way around, a resource without matching permissions could cause problems.
+        db.createResourceThen(res, id, resource, function(etag) {
+          resource.self = selfURL 
+          addCalculatedProperties(resource)
+          lib.created(req, res, resource, resource.self, etag)
+        })
+      })
     })
   })
 }
@@ -109,15 +101,11 @@ function addCalculatedProperties(resource) {
 
 function getResource(req, res, id) {
   ifAllowedThen(req, res, null, '_self', 'read', null, null, function(err, reason) {
-    db.withResourceDo(id, function(err, resource , etag) {
-      if (err)
-        handleErr(req, res, err, resource)
-      else {
-        resource.self = makeSelfURL(req, id)
-        addCalculatedProperties(resource)
-        lib.externalizeURLs(resource, req.headers.host)
-        lib.found(req, res, resource, etag)
-      }
+    db.withResourceDo(res, id, function(resource , etag) {
+      resource.self = makeSelfURL(req, id)
+      addCalculatedProperties(resource)
+      lib.externalizeURLs(resource, req.headers.host)
+      lib.found(req, res, resource, etag)
     })
   })
 }
@@ -125,11 +113,8 @@ function getResource(req, res, id) {
 function deleteResource(req, res, id) {
   var resourceURL = '//' + req.headers.host + req.url
   ifAllowedThen(req, res, url, '_self', 'delete', null, null, function(err, reason) {
-    db.deleteResourceThen(id, function (err, resource, etag) {
-      if (err)
-        handleErr(req, res, err, resource)
-      else
-        deletePermissionsThen(req, res, resourceURL) // Don't wait for this. If it fails, there will be a dangling resource object
+    db.deleteResourceThen(res, id, function (resource, etag) {
+      deletePermissionsThen(req, res, resourceURL) // Don't wait for this. If it fails, there will be a dangling resource object
       addCalculatedProperties(resource)
       lib.found(req, res, resource, etag)
     })
@@ -138,25 +123,16 @@ function deleteResource(req, res, id) {
 
 function updateResource(req, res, id, patch) {
   ifAllowedThen(req, res, null, '_self', 'update', null, null, function() {
-    db.withResourceDo(id, function(err, resource , etag) {
-      if (err)
-        handleErr(req, res, err, etag)
-      else if (req.headers['if-match'] == etag) { 
+    db.withResourceDo(res, id, function(resource , etag) {
+      if (req.headers['if-match'] == etag) { 
         lib.applyPatch(req, res, resource, patch, function(patchedResource) {
-          verifyResource(patchedResource, function(err) {
-            if (err)
-              lib.badRequest(res, err)
-            else
-              db.updateResourceThen(id, patchedResource, etag, function (err, etag) {
-                log('updateResource', `updated resource. err: ${err} id: ${id} etag: ${etag}`)
-                if (err)
-                  handleErr(req, res, err, etag)
-                else {
-                  patchedResource.self = makeSelfURL(req, id) 
-                  addCalculatedProperties(patchedResource)
-                  lib.found(req, res, patchedResource, etag)
-                }
-              })
+          verifyResource(res, patchedResource, function() {
+            db.updateResourceThen(res, id, patchedResource, etag, function (etag) {
+              log('updateResource', `updated resource. err: ${err} id: ${id} etag: ${etag}`)
+              patchedResource.self = makeSelfURL(req, id) 
+              addCalculatedProperties(patchedResource)
+              lib.found(req, res, patchedResource, etag)
+            })
           })
         })
       } else {
@@ -169,20 +145,13 @@ function updateResource(req, res, id, patch) {
 
 function putResource(req, res, id, resource) {
   ifAllowedThen(req, res, null, '_self', 'put', null, null, function() {
-    verifyResource(resource, function(err) {
-      if (err)
-        lib.badRequest(res, err)
-      else
-        db.updateResourceThen(id, makeSelfURL(req, id), resource, null, function (err, etag) {
-          log('putResource', `updated resource. err: ${err} id: ${id} etag: ${etag}`)
-          if (err)
-            handleErr(req, res, err, errParam)
-          else {
-            resource.self = makeSelfURL(req, id) 
-            addCalculatedProperties(resource)
-            lib.found(req, res, resource, etag)
-          }
-        })
+    verifyResource(res, resource, function() {
+      db.updateResourceThen(res, id, makeSelfURL(req, id), resource, null, function (etag) {
+        log('putResource', `updated resource. err: ${err} id: ${id} etag: ${etag}`)
+        resource.self = makeSelfURL(req, id) 
+        addCalculatedProperties(resource)
+        lib.found(req, res, resource, etag)
+      })
     })
   })
 }

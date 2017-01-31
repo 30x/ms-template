@@ -13,53 +13,53 @@ var COMPONENT_RESOURCE_TABLE = process.env.COMPONENT_RESOURCE_TABLE || COMPONENT
 
 var pool = new Pool(config)
 
-function createResourceThen(id, resource, callback) {
+function createResourceThen(res, id, resource, callback) {
   var query = `INSERT INTO ${COMPONENT_RESOURCE_TABLE} (id, etag, data) values('${id}', 1, '${JSON.stringify(resource)}') RETURNING etag`
   pool.query(query, function (err, pgResult) {
     if (err)
-      callback(err)
+      lib.internalError(res, err)
     else {
       if (pgResult.rowCount === 0) 
-        callback(404)
+        lib.duplicate(res, `resource with id ${id} already exists`)
       else {
         var row = pgResult.rows[0];
-        callback(null, row.etag)
+        callback(row.etag)
       }
     }
   })
 }
 
-function withResourceDo(id, callback) {
+function withResourceDo(res, id, callback) {
   pool.query(`SELECT etag, data FROM ${COMPONENT_RESOURCE_TABLE} WHERE id = $1`, [id], function (err, pg_res) {
     if (err) 
-      callback(500)
+      lib.internalError(res, err)
     else
       if (pg_res.rowCount === 0)
-        callback(404)
+        lib.notFound(res, `resource with id ${id} does not exist`)
       else {
         var row = pg_res.rows[0]
-        callback(null, row.data, row.etag)
+        callback(row.data, row.etag)
       }
   })
 }
 
-function deleteResourceThen(id, callback) {
+function deleteResourceThen(res, id, callback) {
   var query = `DELETE FROM ${COMPONENT_RESOURCE_TABLE} WHERE id = '${id}' RETURNING *`
   pool.query(query, function (err, pgResult) {
     if (err)
-      callback(err)
+      lib.internalError(res, err)
     else {
       if (pgResult.rowCount === 0) 
-        callback(404)
+        lib.notFound(res, `resource with id ${id} does not exist`)
       else {
         var row = pgResult.rows[0];
-        callback(err, pgResult.rows[0].data, pgResult.rows[0].etag)
+        callback(pgResult.rows[0].data, pgResult.rows[0].etag)
       }
     }
   })
 }
 
-function updateResourceThen(id, resource, etag, callback) {
+function updateResourceThen(res, id, resource, etag, callback) {
   var query
   if (etag)
      query = `UPDATE ${COMPONENT_RESOURCE_TABLE} SET (etag, data) = (${(etag+1) % 2147483647}, '${JSON.stringify(resource)}') WHERE id = '${id}' AND etag = ${etag} RETURNING etag`
@@ -67,13 +67,13 @@ function updateResourceThen(id, resource, etag, callback) {
      query = `UPDATE ${COMPONENT_RESOURCE_TABLE} SET (data) = (${(etag+1) % 2147483647}, '${JSON.stringify(resource)}') WHERE id = '${id}' RETURNING etag`  
   pool.query(query, function (err, pgResult) {
     if (err)
-      callback(err)
+      lib.internalError(res, err)
     else {
       if (pgResult.rowCount === 0) 
-        callback(404)
+        lib.notFound(res, `resource with id ${id} does not exist`)
       else {
         var row = pgResult.rows[0];
-        callback(null, row.etag)
+        callback(row.etag)
       }
     }
   })
