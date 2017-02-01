@@ -159,8 +159,12 @@ function requestHandler(req, res) {
 }
 
 
+function init (callback) {
+  db.init(callback)
+}
+
 function start(){
-  db.init(function(){
+  init(function(){
     var port = process.env.PORT
     http.createServer(requestHandler).listen(port, function() {
       console.log(`server is listening on ${port}`)
@@ -172,10 +176,7 @@ if (require.main === module)
   start()
 else 
   exports = {
-    createResource: createResource,
-    getResource: getResource,
-    patchResource: patchResource,
-    putResource: putResource,
-    deleteResource: deleteResource,
-    init: db.init
+    requestHandler:requestHandler,
+    RESOURCES_PREFIX: RESOURCES_PREFIX,
+    init: init
   }
