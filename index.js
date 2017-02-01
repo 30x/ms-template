@@ -68,12 +68,12 @@ function createResource(req, res, resource) {
 }
 
 function makeSelfURL(req, key) {
-  return `${RESOURCES_PREFIX}${key}`
+  return `${rLib.INTERNAL_URL_PREFIX}${RESOURCES_PREFIX}${key}`
 }
 
 function addCalculatedProperties(resource) {
-  resource._permissions = `/permissions?${resource.self}`
-  resource._permissionsHeirs = `/permissions-heirs?${resource.self}`  
+  resource._permissions = `${rLib.INTERNAL_URL_PREFIX}/permissions?${resource.self}`
+  resource._permissionsHeirs = `${rLib.INTERNAL_URL_PREFIX}/permissions-heirs?${resource.self}`  
 }
 
 function getResource(req, res, id) {
@@ -127,7 +127,7 @@ function putResource(req, res, id, resource) {
         log('putResource', `updated resource. err: ${err} id: ${id} etag: ${etag}`)
         resource.self = makeSelfURL(req, id) 
         addCalculatedProperties(resource)
-        rLib.found(req, res, resource, req.headers.accept, etag)
+        rLib.found(res, resource, req.headers.accept, resource.self, etag)
       })
     })
   })
@@ -154,7 +154,7 @@ function requestHandler(req, res) {
       else
         rLib.methodNotAllowed(req, res, ['GET', 'DELETE', 'PATCH', 'PUT'])
     } else
-      rLib.notFound(req, res)
+      rLib.notFound(res, `//${req.headers.host}${req.url} not found`)
   }
 }
 

@@ -36,7 +36,7 @@ function withResourceDo(res, id, callback) {
       lib.internalError(res, err)
     else
       if (pg_res.rowCount === 0)
-        lib.notFound(res, `resource with id ${id} does not exist`)
+        rLib.notFound(res, `resource with id ${id} does not exist`)
       else {
         var row = pg_res.rows[0]
         callback(row.data, row.etag)
