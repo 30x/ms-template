@@ -10,7 +10,7 @@ var config = {
 }
 
 var COMPONENT_NAME = process.env.COMPONENT_NAME
-var COMPONENT_RESOURCE_TABLE = process.env.COMPONENT_RESOURCE_TABLE || COMPONENT_NAME
+var COMPONENT_RESOURCE_TABLE = process.env.COMPONENT_RESOURCE_TABLE || COMPONENT_NAME.replace(/-/g, '_')
 
 var pool = new Pool(config)
 
