@@ -6,15 +6,15 @@ const rLib = require('response-helper-functions')
 const db = require('./pg-storage.js')
 const pLib = require('permissions-helper-functions')
 
-const COMPONENT = process.env.COMPONENT
+const COMPONENT_NAME = process.env.COMPONENT_NAME
 const BASE_RESOURCE = process.env.BASE_RESOURCE || '/'
-const RESOURCES_PROPERTY = process.env.RESOURCES_PROPERTY || COMPONENT
+const RESOURCES_PROPERTY = process.env.RESOURCES_PROPERTY || COMPONENT_NAME
 const CHECK_PERMISSIONS = process.env.CHECK_PERMISSIONS
 const RESOURCES_PATH = `${BASE_RESOURCE}${RESOURCES_PROPERTY}`
 const RESOURCES_PREFIX = `${BASE_RESOURCE}${RESOURCES_PROPERTY}/`
 
 function log(funcionName, text) {
-  console.log(Date.now(), COMPONENT, funcionName, text)
+  console.log(Date.now(), COMPONENT_NAME, funcionName, text)
 }
 
 function ifAllowedThen (req, res, url, property, action, base, path, callback) {

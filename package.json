@@ -12,9 +12,9 @@
   "author": "anon",
   "license": "Apache-2.0",
   "dependencies": {
-    "http-helper-functions": "0.0.81",
-    "permissions-helper-functions": "0.0.34",
+    "http-helper-functions": "0.0.83",
+    "permissions-helper-functions": "0.0.38",
     "pg": "^6.1.2",
-    "response-helper-functions": "0.0.3"
+    "response-helper-functions": "0.0.4"
   }
 }

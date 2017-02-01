@@ -9,8 +9,8 @@ var config = {
   database: process.env.PG_DATABASE
 }
 
-var COMPONENT = process.env.COMPONENT
-var COMPONENT_RESOURCE_TABLE = process.env.COMPONENT_RESOURCE_TABLE || COMPONENT
+var COMPONENT_NAME = process.env.COMPONENT_NAME
+var COMPONENT_RESOURCE_TABLE = process.env.COMPONENT_RESOURCE_TABLE || COMPONENT_NAME
 
 var pool = new Pool(config)
 

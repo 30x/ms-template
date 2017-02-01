@@ -14,11 +14,11 @@ with open('token.txt') as f:
     TOKEN1 = f.read()
     USER1 = json.loads(b64_decode(TOKEN1.split('.')[1]))['user_id']
 
-COMPONENT = os.environ.get('COMPONENT')
+COMPONENT_NAME = os.environ.get('COMPONENT_NAME')
 SCHEME = os.environ.get('SCHEME')
 AUTHORITY = os.environ.get('AUTHORITY')
 BASE_RESOURCE = os.environ.get('BASE_RESOURCE')
-RESOURCES_PROPERTY = os.environ.get('RESOURCES_PROPERTY') or COMPONENT
+RESOURCES_PROPERTY = os.environ.get('RESOURCES_PROPERTY') or COMPONENT_NAME
 BASE_URL = '%s://%s' % (SCHEME, AUTHORITY)
 
 def main():
