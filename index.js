@@ -98,14 +98,14 @@ function deleteResource(req, res, id) {
   })
 }
 
-function updateResource(req, res, id, patch) {
+function patchResource(req, res, id, patch) {
   ifAllowedThen(req, res, null, '_self', 'update', null, null, function() {
     db.withResourceDo(res, id, function(resource , etag) {
       if (req.headers['if-match'] == etag) { 
         lib.applyPatch(req, res, resource, patch, function(patchedResource) {
           verifyResource(res, patchedResource, function() {
             db.updateResourceThen(res, id, patchedResource, etag, function (etag) {
-              log('updateResource', `updated resource. id: ${id} etag: ${etag}`)
+              log('patchResource', `updated resource. id: ${id} etag: ${etag}`)
               patchedResource.self = makeSelfURL(req, id) 
               addCalculatedProperties(patchedResource)
               rLib.found(res, patchedResource, req.headers.accept, patchedResource.self, etag)
@@ -148,7 +148,7 @@ function requestHandler(req, res) {
       else if (req.method == 'DELETE') 
         deleteResource(req, res, id)
       else if (req.method == 'PATCH') 
-        lib.getServerPostObject(req, res, (jso) => updateResource(req, res, id, jso))
+        lib.getServerPostObject(req, res, (jso) => patchResource(req, res, id, jso))
       else if (req.method == 'PUT') 
         lib.getServerPostObject(req, res, (jso) => putResource(req, res, id, jso))
       else
@@ -157,6 +157,7 @@ function requestHandler(req, res) {
       rLib.notFound(res, `//${req.headers.host}${req.url} not found`)
   }
 }
+
 
 function start(){
   db.init(function(){
@@ -167,4 +168,14 @@ function start(){
   })
 }
 
-start()
+if (require.main === module) 
+  start()
+else 
+  exports = {
+    createResource: createResource,
+    getResource: getResource,
+    patchResource: patchResource,
+    putResource: putResource,
+    deleteResource: deleteResource,
+    init: db.init
+  }
