@@ -31,15 +31,11 @@ function createPermissionsThen (req, res, url, permissions, callback) {
     callback()
 }
 
-function deletePermissionsThen(req, res, resourceURL) {
+function deletePermissionsThen(req, res, resourceURL, callback) {
   if (CHECK_PERMISSIONS)
-    lib.sendInternalRequestThen(req.headers, res, `/permissions?${resourceURL}`, 'DELETE', undefined, function (clientRes) {
-      lib.getClientResponseBody(clientRes, function(body) {
-        var statusCode = clientRes.statusCode
-        if (statusCode !== 200)
-          log('deleteResource', `unable to delete permissions for ${resourceURL}`)
-      })
-    })  
+    pLib.deletePermissionsThen(req, res, resourceURL, callback)  
+  else
+    callback()
 }
 
 function verifyResource(res, resource, callback) {
@@ -95,7 +91,7 @@ function deleteResource(req, res, id) {
   ifAllowedThen(req, res, url, '_self', 'delete', null, null, function(reason) {
     db.deleteResourceThen(res, id, function (resource, etag) {
       log('deleteResource', `deleted resource. id: ${id} etag: ${etag}`)
-      deletePermissionsThen(req, res, resourceURL) // Don't wait for this. If it fails, there will be a dangling resource object
+      deletePermissionsThen(req, res, resourceURL, function() {}) // Don't wait for this. If it fails, there will be a dangling resource object
       addCalculatedProperties(resource)
       rLib.found(res, resource, req.headers.accept, resourceURL, etag)
     })
