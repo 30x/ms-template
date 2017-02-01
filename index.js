@@ -2,7 +2,7 @@
 const http = require('http')
 const url = require('url')
 const lib = require('http-helper-functions')
-const rlib = require('response-helper-functions')
+const rLib = require('response-helper-functions')
 const db = require('./pg-storage.js')
 const pLib = require('permissions-helper-functions')
 
@@ -49,7 +49,7 @@ function verifyResource(res, resource, callback) {
 function createResource(req, res, resource) {
   ifAllowedThen(req, res, `${RESOURCES_PREFIX}${RESOURCES_PROPERTY}`, '_self', 'create', null, null, function() {
     verifyResource(res, resource, function() { 
-      var id = lib.uuid4()
+      var id = rLib.uuid4()
       var selfURL = makeSelfURL(req, id)
       var permissions = resource._permissions
       if (permissions !== undefined) {
@@ -64,7 +64,7 @@ function createResource(req, res, resource) {
           log('createResource', `created resource. id: ${id} etag: ${etag}`)
           resource.self = selfURL 
           addCalculatedProperties(resource)
-          lib.created(req, res, resource, resource.self, etag)
+          rLib.created(res, resource, req.headers.accept, resource.self, etag)
         })
       })
     })
@@ -72,13 +72,12 @@ function createResource(req, res, resource) {
 }
 
 function makeSelfURL(req, key) {
-  return `scheme://authority${RESOURCES_PREFIX}${key}`
+  return `${RESOURCES_PREFIX}${key}`
 }
 
 function addCalculatedProperties(resource) {
-  var externalSelf = lib.externalizeURLs(resource.self)
-  resource._permissions = `scheme://authority/permissions?${externalSelf}`
-  resource._permissionsHeirs = `scheme://authority/permissions-heirs?${externalSelf}`  
+  resource._permissions = `/permissions?${resource.self}`
+  resource._permissionsHeirs = `/permissions-heirs?${resource.self}`  
 }
 
 function getResource(req, res, id) {
@@ -86,20 +85,19 @@ function getResource(req, res, id) {
     db.withResourceDo(res, id, function(resource , etag) {
       resource.self = makeSelfURL(req, id)
       addCalculatedProperties(resource)
-      lib.externalizeURLs(resource, req.headers.host)
-      lib.found(req, res, resource, etag)
+      rLib.found(res, resource, req.headers.accept, resource.self, etag)
     })
   })
 }
 
 function deleteResource(req, res, id) {
-  var resourceURL = '//' + req.headers.host + req.url
+  var resourceURL = makeSelfURL(req, id)
   ifAllowedThen(req, res, url, '_self', 'delete', null, null, function(reason) {
     db.deleteResourceThen(res, id, function (resource, etag) {
       log('deleteResource', `deleted resource. id: ${id} etag: ${etag}`)
       deletePermissionsThen(req, res, resourceURL) // Don't wait for this. If it fails, there will be a dangling resource object
       addCalculatedProperties(resource)
-      lib.found(req, res, resource, etag)
+      rLib.found(res, resource, req.headers.accept, resourceURL, etag)
     })
   })
 }
@@ -114,13 +112,13 @@ function updateResource(req, res, id, patch) {
               log('updateResource', `updated resource. id: ${id} etag: ${etag}`)
               patchedResource.self = makeSelfURL(req, id) 
               addCalculatedProperties(patchedResource)
-              lib.found(req, res, patchedResource, etag)
+              rLib.found(res, patchedResource, req.headers.accept, patchedResource.self, etag)
             })
           })
         })
       } else {
         var err = (req.headers['if-match'] === undefined) ? 'missing If-Match header' : 'If-Match header does not match etag ' + req.headers['If-Match'] + ' ' + etag
-        lib.badRequest(res, err)
+        rLib.badRequest(res, err)
       }      
     })
   })
@@ -133,7 +131,7 @@ function putResource(req, res, id, resource) {
         log('putResource', `updated resource. err: ${err} id: ${id} etag: ${etag}`)
         resource.self = makeSelfURL(req, id) 
         addCalculatedProperties(resource)
-        lib.found(req, res, resource, etag)
+        rLib.found(req, res, resource, req.headers.accept, etag)
       })
     })
   })
@@ -144,7 +142,7 @@ function requestHandler(req, res) {
     if (req.method == 'POST') 
       lib.getServerPostObject(req, res, (rep) => createResource(req, res, rep))
     else 
-      lib.methodNotAllowed(req, res, ['POST'])
+      rLib.methodNotAllowed(req, res, ['POST'])
   else {
     var req_url = url.parse(req.url)
     if (req_url.pathname.startsWith(RESOURCES_PREFIX)) {
@@ -158,9 +156,9 @@ function requestHandler(req, res) {
       else if (req.method == 'PUT') 
         lib.getServerPostObject(req, res, (jso) => putResource(req, res, id, jso))
       else
-        lib.methodNotAllowed(req, res, ['GET', 'DELETE', 'PATCH', 'PUT'])
+        rLib.methodNotAllowed(req, res, ['GET', 'DELETE', 'PATCH', 'PUT'])
     } else
-      lib.notFound(req, res)
+      rLib.notFound(req, res)
   }
 }
 

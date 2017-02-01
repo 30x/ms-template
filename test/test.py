@@ -48,7 +48,7 @@ def main():
     if r.status_code == 200:
         example = r.json()
         if example['description'] == description:
-            print 'correctly retrieved permissions. Etag: %s Content-Location: %s' % (r.headers['etag'], r.headers['Content-Location'])
+            print 'correctly retrieved resource. Etag: %s Content-Location: %s' % (r.headers['etag'], r.headers['Content-Location'])
         else:
             print 'retrieved example but comparison failed %s' % example
     else:
