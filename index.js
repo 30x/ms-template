@@ -26,14 +26,14 @@ function ifAllowedThen (req, res, url, property, action, base, path, callback) {
 
 function createPermissionsThen (req, res, url, permissions, callback) {
   if (CHECK_PERMISSIONS)
-    plib.createPermissionsThen (req, res, url, permissions, callback)
+    plib.createPermissionsThen (lib.flowThroughHeaders(req), res, url, permissions, callback)
   else
     callback()
 }
 
 function deletePermissionsThen(req, res, resourceURL, callback) {
   if (CHECK_PERMISSIONS)
-    pLib.deletePermissionsThen(req, res, resourceURL, callback)  
+    pLib.deletePermissionsThen(lib.flowThroughHeaders(req), res, resourceURL, callback)  
   else
     callback()
 }
