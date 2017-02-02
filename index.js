@@ -19,7 +19,7 @@ function log(funcionName, text) {
 
 function ifAllowedThen (req, res, url, property, action, base, path, callback) {
   if (CHECK_PERMISSIONS)
-    plib.ifAllowedThen (req, res, url, property, action, base, path, callback)
+    plib.ifAllowedThen (lib.flowThroughHeaders(req), res, url, property, action, base, path, callback)
   else
     callback()
 }

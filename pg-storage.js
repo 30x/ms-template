@@ -100,7 +100,7 @@ function init(callback) {
               console.error(`error creating ${COMPONENT_RESOURCE_TABLE}_data_inx index`, err)
             } else {
               release()
-              console.log('permissions-maintenance-db: connected to PG, config: ', config)
+              console.log(`${COMPONENT_NAME}-prostorage.js: connected to PG, config: `, config)
               callback()
             }
           })
