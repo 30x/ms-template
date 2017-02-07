@@ -3,6 +3,7 @@ import base64
 import json
 import os
 from urlparse import urljoin
+from os import environ as env
 
 def b64_decode(data):
     missing_padding = (4 - len(data) % 4) % 4
@@ -10,9 +11,14 @@ def b64_decode(data):
         data += b'='* missing_padding
     return base64.decodestring(data)
 
-with open('token.txt') as f:
-    TOKEN1 = f.read()
-    USER1 = json.loads(b64_decode(TOKEN1.split('.')[1]))['user_id']
+if 'APIGEE_TOKEN1' in env:
+    TOKEN1 = env['APIGEE_TOKEN1']
+else:
+    with open('token.txt') as f:
+        TOKEN1 = f.read()
+USER1_CLAIMS = json.loads(b64_decode(TOKEN1.split('.')[1]))      
+USER1 = '%s#%s' % (USER1_CLAIMS['iss'], USER1_CLAIMS['sub'])
+USER1_E = USER1.replace('#', '%23')
 
 COMPONENT_NAME = os.environ.get('COMPONENT_NAME')
 SCHEME = os.environ.get('SCHEME')
