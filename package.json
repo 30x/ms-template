@@ -15,6 +15,6 @@
     "http-helper-functions": "0.0.83",
     "permissions-helper-functions": "0.0.38",
     "pg": "^6.1.2",
-    "response-helper-functions": "0.0.4"
+    "response-helper-functions": "0.0.8"
   }
 }

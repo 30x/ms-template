@@ -45,7 +45,7 @@ function verifyResource(res, resource, callback) {
 function createResource(req, res, resource) {
   ifAllowedThen(req, res, `${RESOURCES_PREFIX}${RESOURCES_PROPERTY}`, '_self', 'create', null, null, function() {
     verifyResource(res, resource, function() { 
-      var id = rLib.uuid4()
+      var id = rLib.uuidw()
       var selfURL = makeSelfURL(req, id)
       var permissions = resource._permissions
       if (permissions !== undefined) {
