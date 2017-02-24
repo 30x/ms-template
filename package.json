@@ -12,8 +12,8 @@
   "author": "anon",
   "license": "Apache-2.0",
   "dependencies": {
-    "http-helper-functions": "0.0.83",
-    "permissions-helper-functions": "0.0.38",
+    "http-helper-functions": "0.0.88",
+    "permissions-helper-functions": "0.0.44",
     "pg": "^6.1.2",
     "response-helper-functions": "0.0.8"
   }
