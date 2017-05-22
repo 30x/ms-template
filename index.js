@@ -102,7 +102,7 @@ function patchResource(req, res, id, patch) {
   ifAllowedThen(req, res, null, '_self', 'update', null, null, function() {
     db.withResourceDo(res, id, function(resource , etag) {
       if (req.headers['if-match'] == etag) { 
-        lib.applyPatch(req, res, resource, patch, function(patchedResource) {
+        lib.applyPatch(req.headers, res, resource, patch, function(patchedResource) {
           verifyResource(res, patchedResource, function() {
             db.updateResourceThen(res, id, patchedResource, etag, function (etag) {
               log('patchResource', `updated resource. id: ${id} etag: ${etag}`)
@@ -114,7 +114,7 @@ function patchResource(req, res, id, patch) {
         })
       } else {
         var err = (req.headers['if-match'] === undefined) ? 'missing If-Match header' : 'If-Match header does not match etag ' + req.headers['If-Match'] + ' ' + etag
-        rLib.badRequest(res, err)
+        rLib.preconditionFailed(res, err)
       }      
     })
   })

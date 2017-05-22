@@ -15,8 +15,8 @@ var COMPONENT_RESOURCE_TABLE = process.env.COMPONENT_RESOURCE_TABLE || COMPONENT
 var pool = new Pool(config)
 
 function createResourceThen(res, id, resource, callback) {
-  var query = `INSERT INTO ${COMPONENT_RESOURCE_TABLE} (id, etag, data) values('${id}', '${lib.uuid4()}', '${JSON.stringify(resource)}') RETURNING etag`
-  pool.query(query, function (err, pgResult) {
+  var query = `INSERT INTO ${COMPONENT_RESOURCE_TABLE} (id, etag, data) values($1, $2, $3) RETURNING etag`
+  pool.query(query, [id, lib.uuid4(), resource], function (err, pgResult) {
     if (err)
       lib.internalError(res, err)
     else {
@@ -45,8 +45,8 @@ function withResourceDo(res, id, callback) {
 }
 
 function deleteResourceThen(res, id, callback) {
-  var query = `DELETE FROM ${COMPONENT_RESOURCE_TABLE} WHERE id = '${id}' RETURNING *`
-  pool.query(query, function (err, pgResult) {
+  var query = `DELETE FROM ${COMPONENT_RESOURCE_TABLE} WHERE id = $1 RETURNING *`
+  pool.query(query, [id], function (err, pgResult) {
     if (err)
       lib.internalError(res, err)
     else {
@@ -61,12 +61,16 @@ function deleteResourceThen(res, id, callback) {
 }
 
 function updateResourceThen(res, id, resource, etag, callback) {
-  var query
-  if (etag)
-     query = `UPDATE ${COMPONENT_RESOURCE_TABLE} SET (etag, data) = ('${lib.uuid4()}', '${JSON.stringify(resource)}') WHERE id = '${id}' AND etag = '${etag}' RETURNING etag`
-  else
-     query = `UPDATE ${COMPONENT_RESOURCE_TABLE} SET (data) = ('${JSON.stringify(resource)}') WHERE id = '${id}' RETURNING etag`  
-  pool.query(query, function (err, pgResult) {
+  var query, params
+  if (etag) {
+     resource.etag = lib.uuid4()
+     query = `UPDATE ${COMPONENT_RESOURCE_TABLE} SET (etag, data) = ($1, $2) WHERE id = $3 AND etag = $4 RETURNING etag`
+     params = [resource.etag, resource, id, etag]
+  } else {
+     query = `UPDATE ${COMPONENT_RESOURCE_TABLE} SET data = $1 WHERE id = $2 RETURNING etag`  
+     params = [resource, id]
+  }
+  pool.query(query, params, function (err, pgResult) {
     if (err) {
       console.log(query)
       console.log(err)
@@ -83,7 +87,7 @@ function updateResourceThen(res, id, resource, etag, callback) {
 }
 
 function init(callback) {
-  var query = `CREATE TABLE IF NOT EXISTS ${COMPONENT_RESOURCE_TABLE} (id text primary key, etag text, data jsonb)`
+  var query = `CREATE TABLE IF NOT EXISTS ${COMPONENT_RESOURCE_TABLE} (id text primary key, data jsonb)`
   pool.connect(function(err, client, release) {
     if(err)
       console.error(`error creating ${COMPONENT_RESOURCE_TABLE} table`, err)

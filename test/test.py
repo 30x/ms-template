@@ -47,7 +47,7 @@ def main():
         print 'failed to create example %s %s' % (r.status_code, r.text)
         return
     
-    # Retrieve permissions for Acme org
+    # Retrieve example for Acme org
 
     headers['Accept'] = 'application/json'
     r = requests.get(example_url, headers=headers)
@@ -70,9 +70,9 @@ def main():
     headers = {'Content-Type': 'application/merge-patch+json', 'Accept': 'application/json','Authorization': 'BEARER %s' % TOKEN1, 'If-Match': example_etag}
     r = requests.patch(example_url, headers=headers, json=patch)
     if r.status_code == 200:
-        print 'correctly patched permissions' 
+        print 'correctly patched example' 
     else:
-        print 'failed to patch permissions %s %s' % (r.status_code, r.text)
+        print 'failed to patch example %s %s' % (r.status_code, r.text)
     
     # Delete example
 
