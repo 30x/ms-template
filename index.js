@@ -72,8 +72,8 @@ function makeSelfURL(req, key) {
 }
 
 function addCalculatedProperties(resource) {
-  resource._permissions = `${rLib.INTERNAL_URL_PREFIX}/permissions?${resource.self}`
-  resource._permissionsHeirs = `${rLib.INTERNAL_URL_PREFIX}/permissions-heirs?${resource.self}`  
+  resource._permissions = `${rLib.INTERNAL_URL_PREFIX}/az-permissions?${resource.self}`
+  resource._permissionsHeirs = `${rLib.INTERNAL_URL_PREFIX}/az-permissions-heirs?${resource.self}`  
 }
 
 function getResource(req, res, id) {
@@ -175,8 +175,8 @@ function start(){
 if (require.main === module) 
   start()
 else 
-  exports = {
+  module.exports = {
     requestHandler:requestHandler,
-    RESOURCES_PREFIX: RESOURCES_PREFIX,
+    paths: [RESOURCES_PREFIX, RESOURCES_PATH],
     init: init
   }
